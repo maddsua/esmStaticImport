@@ -1,7 +1,9 @@
 
-export const staticImport = async <T extends object> (moduleRaw: string, propKey: string): Promise<T> => {
+export const staticImport = async <T> (moduleRaw: string, propKey: string): Promise<T> => {
+	
+	const refExpr = /export\s((const)|(let))\s(__prop_ref\s*)(:\s*[\w\d_]+\s*)?=\s*[\{\[]/i;
 
-	const importPattern = new RegExp(`export\\s((const)|(let))\\s${propKey}\\s=\\s[\\{\\[]`, 'i');
+	const importPattern = new RegExp(refExpr.source.replace('__prop_ref', propKey), 'i');
 
 	const importMatch = moduleRaw.match(importPattern)?.[0];
 	if (!importMatch) {
