@@ -11,5 +11,8 @@
 		"import"
 	],
 	"author": "maddsua",
-	"license": "MIT"
+	"license": "MIT",
+	"files": [
+		"esmStaticImport.ts"
+	]
 }
