@@ -1,51 +1,51 @@
-interface StaticImportResult {
-	data: object | null;
-	error?: Error;
-}
 
-export default (data: string, propname: string): StaticImportResult => {
+export const staticImport = async <T extends object> (moduleRaw: string, propKey: string): Promise<T> => {
 
-	const importStartMatch = data.match(new RegExp(`export\\sconst\\s${propname}\\s=\\s[\\{\\[]`, 'i'))?.[0];
-	if (!importStartMatch) return {
-		data: null,
-		error: new Error('Didn\'t match import start or no such exported property')
-	};
+	const importPattern = new RegExp(`export\\s((const)|(let))\\s${propKey}\\s=\\s[\\{\\[]`, 'i');
 
-	const thisObjectOpenParenthness = importStartMatch.at(-1);
-	const thisObjectCloseParenthness = thisObjectOpenParenthness === '{' ? '}' : ']';
+	const importMatch = moduleRaw.match(importPattern)?.[0];
+	if (!importMatch) {
+		throw new Error('Didn\'t match import start or no such exported property');
+	}
 
-	const importSlice = data.slice(data.indexOf(importStartMatch));
-	const exportObjectStart = importSlice.indexOf(thisObjectOpenParenthness) + 1;
-	let exportObjectText = '';
+	const objOpenSymbol = importMatch.at(-1);
+	if (!objOpenSymbol) {
+		throw new Error('Parenthness sequence invalid');
+	}
+
+	const objCloseSymbol = objOpenSymbol === '{' ? '}' : ']';
+
+	const importSlice = moduleRaw.slice(moduleRaw.indexOf(importMatch));
+	const importObjStart = importSlice.indexOf(objOpenSymbol) + 1;
+	let exportedSlice = '';
 	
-	for (let i = exportObjectStart, parenthnesses = 1; i < importSlice.length; i++) {
+	for (let idx = importObjStart, nestLevel = 1; idx < importSlice.length; idx++) {
 		
-		if (importSlice[i] === thisObjectOpenParenthness) parenthnesses++;
+		if (importSlice[idx] === objOpenSymbol) {
+			nestLevel++;
+		}
 
-		if (importSlice[i] === thisObjectCloseParenthness) {
+		if (importSlice[idx] === objCloseSymbol) {
 
-			parenthnesses--;
+			nestLevel--;
 
-			if (parenthnesses == 0) {
-				exportObjectText = importSlice.slice(exportObjectStart - 1, i + 1);
+			if (nestLevel == 0) {
+				exportedSlice = importSlice.slice(importObjStart - 1, idx + 1);
 				break;
 			}
 		}
 	}
 
-	if (!exportObjectText.length) return {
-		data: null,
-		error: new Error('Could not match export boundries')
-	};
-
-	let wantedObject: object;
-	
-	try {
-		//	potential foot-shooter but I don't care
-		wantedObject = new Function(`return (${exportObjectText});`)();
-	} catch (error) {
-		return { data: null, error };
+	if (!exportedSlice.length) {
+		throw new Error('Could not match export boundries');
 	}
 
-	return { data: wantedObject };
+	try {
+		//	potential foot-shooter but I don't care
+		return new Function(`return (${exportedSlice});`)() as T;
+	} catch (error) {
+		throw new Error(`Failed to parse imported object: ${error}`);
+	}
 };
+
+export default staticImport;

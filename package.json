@@ -1,0 +1,15 @@
+{
+	"name": "esm-static-import",
+	"type": "module",
+	"version": "1.1.0",
+	"description": "Minimal ES module parser",
+	"main": "esmStaticImport.ts",
+	"types": "esmStaticImport.ts",
+	"keywords": [
+		"esm",
+		"ts",
+		"import"
+	],
+	"author": "maddsua",
+	"license": "MIT"
+}
